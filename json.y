@@ -3,6 +3,7 @@
     int yylex();
     #include <stdio.h>     /* C declarations used in actions */
     #include <stdlib.h>
+    #include <string.h>
     #include <ctype.h>
 %}
 %union {
@@ -10,12 +11,40 @@
   double val;
   char* str;
 }
-%start      line
-%token      number
-%token      STRING
+%start            JSON
+%token            true false null
+%left             O_BEGIN O_END A_BEGIN A_END
+%left             COMMA
+%left             COLON
+%token            <intval> NUMBER
+%token            <str> STRING
+%type             <str> JSON 
 %%
-line: number {printf("That was a number yo");}
-    | STRING {printf("string yo");}
+JSON: O_BEGIN O_END
+{
+  $$ = "{}";
+  printf("%s\n",$$);
+}
+| O_BEGIN MEMBERS O_END
+{
+  ;
+};
+MEMBERS: PAIR
+{
+  ;
+}
+| PAIR COMMA MEMBERS
+{
+  ;
+};
+PAIR: STRING COLON STRING
+{
+  printf("%s %s",$1,$3);
+}
+| STRING COLON NUMBER
+{
+  printf("%s %d",$1,$3);
+};
 %%
 int main (void) {
 	return yyparse ( );

@@ -19,11 +19,52 @@ CHAR {UNESCAPEDCHAR}|{ESCAPEDCHAR}|{UNICODECHAR}
 CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
-{DBL_QUOTE}{DBL_QUOTE} |
 {DBL_QUOTE}{CHARS}{DBL_QUOTE} {
-    yylval.str = yytext; 
+    yylval.str=strdup(yytext);
     return STRING;
 };
+{NUMBER} {
+    yylval.intval=atoi(strdup(yytext));
+    return NUMBER;
+}
+true {
+    return true;
+};
+false {
+    return false;
+};
+null {
+    return null;
+};
+\{ {
+    return O_BEGIN;
+};
+
+\} {
+    return O_END;
+};
+
+\[ {
+    return A_BEGIN;
+};
+
+\] {
+    return A_END;
+};
+
+, {
+    return COMMA;
+};
+: {
+    return COLON;
+};
+
+[ \t\n]+ /* ignore whitespace */;
+
+. {
+    printf("Unexpected: %c\nExiting...\n",*yytext);
+    exit(0);
+}
 %%
 int yywrap(void)
 {
