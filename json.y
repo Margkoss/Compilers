@@ -18,7 +18,7 @@
 %left             COLON
 %token            <intval> NUMBER
 %token            <str> STRING
-%type             <str> JSON 
+%type             <str> JSON ARRAY
 %%
 JSON: O_BEGIN O_END
 {
@@ -37,13 +37,44 @@ MEMBERS: PAIR
 {
   ;
 };
-PAIR: STRING COLON STRING
+PAIR: STRING COLON VALUE 
 {
-  printf("%s %s",$1,$3);
+  printf("%s",$1);
 }
-| STRING COLON NUMBER
+;
+ARRAY: A_BEGIN A_END
 {
-  printf("%s %d",$1,$3);
+  $$ = "[]";
+  printf("%s\n",$$);
+}
+| A_BEGIN ELEMENTS A_END
+{
+  ;
+};
+ELEMENTS: VALUE
+{
+  // $$ = $1;
+  ;
+}
+| VALUE COMMA ELEMENTS
+{
+  ;
+};
+VALUE: STRING
+{
+  printf("%s",$1);
+}
+| NUMBER
+{
+  printf("%d",$1);
+}
+| ARRAY
+{
+  ;
+}
+| JSON
+{
+  ;
 };
 %%
 int main (void) {
