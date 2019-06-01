@@ -12,12 +12,12 @@
   char* str;
 }
 %start            JSON
-%token            true false null
+%token            true false null 
 %left             O_BEGIN O_END A_BEGIN A_END
 %left             COMMA
 %left             COLON
 %token            <intval> NUMBER
-%token            <str> STRING
+%token            <str> STRING TEXT_INIT
 %type             <str> JSON ARRAY
 %%
 JSON: O_BEGIN O_END
@@ -39,7 +39,15 @@ MEMBERS: PAIR
 };
 PAIR: STRING COLON VALUE 
 {
-  printf("%s",$1);
+  ;
+}
+| TEXT_INIT COLON STRING
+{
+  if(strlen($3) <= 140){
+    printf("apodekto textoni");
+  }else{
+    printf("kako");
+  }
 }
 ;
 ARRAY: A_BEGIN A_END
@@ -62,11 +70,11 @@ ELEMENTS: VALUE
 };
 VALUE: STRING
 {
-  printf("%s",$1);
+  // printf("%s",$1);
 }
 | NUMBER
 {
-  printf("%d",$1);
+  // printf("%d",$1);
 }
 | ARRAY
 {
