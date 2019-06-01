@@ -19,6 +19,9 @@ CHAR {UNESCAPEDCHAR}|{ESCAPEDCHAR}|{UNICODECHAR}
 CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
+{DBL_QUOTE}text{DBL_QUOTE} {
+    return TEXT_INIT;
+};
 {DBL_QUOTE}{CHARS}{DBL_QUOTE} {
     yylval.str=strdup(yytext);
     return STRING;
