@@ -20,7 +20,7 @@ CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
 {DBL_QUOTE}user{DBL_QUOTE} {
-    return USER_INIT
+    return USER_INIT;
 }
 {DBL_QUOTE}text{DBL_QUOTE} {
     return TEXT_INIT;
