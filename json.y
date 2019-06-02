@@ -23,7 +23,7 @@
 JSON: O_BEGIN O_END
 {
   $$ = "{}";
-  printf("%s\n",$$);
+  // printf("%s\n",$$);
 }
 | O_BEGIN MEMBERS O_END
 {
@@ -44,16 +44,17 @@ PAIR: STRING COLON VALUE
 | TEXT_INIT COLON STRING
 {
   if(strlen($3) <= 140){
-    printf("apodekto textoni");
+    printf("text field ok!\n\n");
   }else{
-    printf("kako");
+    printf("text field not acceptable\nexiting...\n\n");
+    exit(1);
   }
 }
 ;
 ARRAY: A_BEGIN A_END
 {
   $$ = "[]";
-  printf("%s\n",$$);
+  // printf("%s\n",$$);
 }
 | A_BEGIN ELEMENTS A_END
 {
