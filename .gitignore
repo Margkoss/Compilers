@@ -4,3 +4,4 @@ json
 json.tab.h
 json.tab.c
 lex.yy.c
+.vscode
