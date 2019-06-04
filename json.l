@@ -1,7 +1,14 @@
 %{
     #include "json.tab.h"
     void yyerror(char* s);
+    void printtok(char* token);
+    void printnum(int num);
     int yylex();
+    int ncount=0;
+    int b, i=0;
+    int tabcount=0;
+    int dont=1;
+    int a=1;
 %}
 DIGIT1to9 [1-9]
 DIGIT [0-9]
@@ -20,17 +27,27 @@ CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
 {DBL_QUOTE}user{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
     return USER_INIT;
 }
 {DBL_QUOTE}text{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
     return TEXT_INIT;
 };
 {DBL_QUOTE}{CHARS}{DBL_QUOTE} {
     yylval.str=strdup(yytext);
+    dont=0;
+    printtok(yytext);
+    dont=1;
     return STRING;
 };
 {NUMBER} {
     yylval.intval=atoi(strdup(yytext));
+    printnum(yylval.intval);
     return NUMBER;
 }
 true {
@@ -43,25 +60,47 @@ null {
     return null;
 };
 \{ {
+    ncount=1; tabcount++;
+    printtok(yytext);
+    ncount=0;
     return O_BEGIN;
 };
 
 \} {
+    ncount=1; 
+    a=0; 
+    tabcount--;
+    printtok(yytext);
+    ncount=0; 
+    a=1;
     return O_END;
 };
 
 \[ {
+    ncount=1; tabcount++;
+    printtok(yytext);
+    ncount=0;
     return A_BEGIN;
 };
 
 \] {
+    ncount=1; a=0; 
+    tabcount--;
+    printtok(yytext);
+    ncount=0; a=1;
     return A_END;
 };
 
-, {
+, { 
+    ncount=1;
+    printtok(strdup(yytext));
+    ncount=0;
     return COMMA;
 };
 : {
+    dont=0;
+    printtok(yytext);
+    dont=1;
     return COLON;
 };
 
@@ -75,4 +114,38 @@ null {
 int yywrap(void)
 {
     return 1;
+}
+void printtok(char* token){    
+    // if(a==0){
+    //     tabcount=tabcount-1;
+    //     for(i=0;i<tabcount;i++){
+    //         if(dont==1){
+    //             printf("\t");
+    //         }
+    //     }
+    // }
+
+    
+    if(ncount==1 && a==0)
+    {   
+        printf("\n");
+        for(i=0;i<tabcount;i++){
+            if(dont==1){
+                printf("\t");
+            }
+        }
+    }
+    printf("%s", token);
+    if(ncount==1 && a==1)
+    {   
+        printf("\n ");
+        for(i=0;i<tabcount;i++){
+            if(dont==1){
+                printf("\t");
+            }
+        }
+    }
+}
+void printnum(int num){
+    printf("%d", num);
 }
