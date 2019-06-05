@@ -5,6 +5,7 @@
   int checkUser(int idField, int nameField, int screenNameField, int locationField);
   void yyerror (char *s);
   int yylex();
+  int userID[20];
   #include <stdio.h>
   #include <stdlib.h>
   #include <string.h>
@@ -13,6 +14,7 @@
   FILE *yyin;
 
   /* Required fields counters */
+  int endOfArray=1;
   int textField = 0;
   int idStrField = 0;
   int createdAtField = 0;
@@ -94,8 +96,18 @@ REQUIRED_VALUES: REQUIRED_VALUE
 |REQUIRED_VALUE COMMA REQUIRED_VALUES;
 REQUIRED_VALUE: STRING COLON NUMBER
 {
-  
   if(!strcmp($1,"\"id\"") && $3 >= 0){
+    userID[endOfArray] = $3;
+    for(int i = 0; i < endOfArray; i++){
+      if(i==endOfArray){
+        continue;
+      }
+        if(userID[i] == userID[endOfArray]){
+          yyerror("\x1B[31mDuplicate ids");
+          exit(1);
+      }
+    } 
+    endOfArray++;
     idField++;
   }
 }
