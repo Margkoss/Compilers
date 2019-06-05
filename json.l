@@ -28,9 +28,15 @@ CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
 {DBL_QUOTE}created_at{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
     return CREATED_AT;
 }
 {DBL_QUOTE}id_str{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
     return ID_STR;
 }
 {DBL_QUOTE}user{DBL_QUOTE} {

@@ -160,7 +160,7 @@ int main ( int argc, char *argv[] ) {
 
 void checkRequirements(int textField, int idStrField, int createdAtField){
   if(textField){
-    printf("%stext field ok!          %s\n",KBLU,thumbsUp);
+    printf("\n%stext field ok!          %s\n",KBLU,thumbsUp);
   }
   else{
     printf("%sERROR:text field missing          \n",KRED);
