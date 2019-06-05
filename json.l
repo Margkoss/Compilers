@@ -3,6 +3,7 @@
     void yyerror(char* s);
     int yylex();
 %}
+%option yylineno
 DIGIT1to9 [1-9]
 DIGIT [0-9]
 DIGITS {DIGIT}+
@@ -19,6 +20,12 @@ CHAR {UNESCAPEDCHAR}|{ESCAPEDCHAR}|{UNICODECHAR}
 CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
+{DBL_QUOTE}created_at{DBL_QUOTE} {
+    return CREATED_AT;
+}
+{DBL_QUOTE}id_str{DBL_QUOTE} {
+    return ID_STR;
+}
 {DBL_QUOTE}user{DBL_QUOTE} {
     return USER_INIT;
 }
