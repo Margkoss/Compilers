@@ -1,6 +1,7 @@
 %{
   /* libs and functions */
   extern int yylineno;
+  extern char *printArray;
   void checkRequirements(int textField, int idStrField, int createdAtField);
   int checkUser(int idField, int nameField, int screenNameField, int locationField);
   void yyerror (char *s);
@@ -103,7 +104,7 @@ REQUIRED_VALUE: STRING COLON NUMBER
         continue;
       }
         if(userID[i] == userID[endOfArray]){
-          yyerror("\x1B[31mDuplicate ids");
+          yyerror("\x1B[31mDuplicate ids\n");
           exit(1);
       }
     } 
