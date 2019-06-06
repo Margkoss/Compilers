@@ -1,7 +1,6 @@
 %{
   /* libs and functions */
   extern int yylineno;
-  extern char *printArray;
   void checkRequirements(int textField, int idStrField, int createdAtField);
   int checkUser(int idField, int nameField, int screenNameField, int locationField);
   void yyerror (char *s);
@@ -13,6 +12,11 @@
   #include <ctype.h>
 
   FILE *yyin;
+
+  /*Error handling*/
+  int errorArrayEnd = 0;
+  char *error[20] = {NULL};
+  int errorLineno[20] = {0};
 
   /* Required fields counters */
   int endOfArray=1;
@@ -62,8 +66,9 @@ PAIR: STRING COLON VALUE
   if(strlen($3) <= 140){
     textField++;
   }else{
-    yyerror("\x1B[31mtext field is supposed to be less or equal to 140 characters");
-    exit(1);
+    error[errorArrayEnd] = "\n\x1B[31mtext field is supposed to be less or equal to 140 characters";
+    errorLineno[errorArrayEnd] = yylineno;
+    errorArrayEnd++;
   }
 }
 | USER_INIT COLON O_BEGIN REQUIRED_VALUES O_END
@@ -82,17 +87,20 @@ PAIR: STRING COLON VALUE
   if(isDigitCounter == (strlen($3) - 2)){         /*adjusting for the double quotes the string is supposed to have*/
     idStrField++;
   }else if(isDigitCounter == 0){
-    yyerror("\x1B[31mid_str field expected alphanumerical integer,alphanumerical string given");
-    exit(1);
+    error[errorArrayEnd] = "\n\x1B[31mid_str field expected alphanumerical integer,alphanumerical string given";
+    errorLineno[errorArrayEnd] = yylineno;
+    errorArrayEnd++;
   }else{
-    yyerror("\x1B[31mid_str field contains characters");
-    exit(1);
+
+    error[errorArrayEnd] = "\n\x1B[31mid_str field contains characters";
+    errorLineno[errorArrayEnd] = yylineno;
+    errorArrayEnd++;
   }
 }
 |CREATED_AT COLON STRING
 {
   createdAtField++;
-};
+}
 REQUIRED_VALUES: REQUIRED_VALUE
 |REQUIRED_VALUE COMMA REQUIRED_VALUES;
 REQUIRED_VALUE: STRING COLON NUMBER
@@ -104,8 +112,9 @@ REQUIRED_VALUE: STRING COLON NUMBER
         continue;
       }
         if(userID[i] == userID[endOfArray]){
-          yyerror("\x1B[31mDuplicate ids\n");
-          exit(1);
+          error[errorArrayEnd] = "\n\x1B[31mDuplicate ids\n";
+          errorLineno[errorArrayEnd] = yylineno;
+          errorArrayEnd++;
       }
     } 
     endOfArray++;
@@ -164,9 +173,24 @@ int main ( int argc, char *argv[] ) {
     printf("%sCannot open %d files!\nExiting...\n", KRED, (--argc));
     return 1;
   }
+  
   yyin = fopen(argv[1],"r");
+
+  if(yyin == NULL)
+  {
+    printf("%sError -> no file '%s'\n",KRED,argv[1]);   
+    exit(1);             
+  }
+
   yyparse();
   fclose(yyin);
+  if(!(error[0] == NULL)){
+    printf("\n%s/----------ERRORS----------/\n\n",KRED);
+    for(int i = 0; i <= errorArrayEnd-1; i++){
+      printf("Error %d at line %d: %s\n", i+1, errorLineno[i], error[i]);
+    }
+    return 1;
+  }
   checkRequirements(textField, idStrField, createdAtField);
   return 0;
 }
@@ -203,6 +227,7 @@ void checkRequirements(int textField, int idStrField, int createdAtField){
   }
   else{
     printf("%suser field bad          \n",KRED);
+    exit(1);
   }
 }
 
