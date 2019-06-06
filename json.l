@@ -12,7 +12,6 @@
     int tabcount=0;
     int dont=1;
     int a=1;
-    char *printArray[100] = {NULL};
 %}
 %option yylineno
 DIGIT1to9 [1-9]
@@ -78,7 +77,7 @@ null {
 };
 \{ {
     ncount=1; tabcount++;
-    printtok(yytext);
+    printtok(strdup(yytext));
     ncount=0;
     return O_BEGIN;
 };
@@ -87,7 +86,7 @@ null {
     ncount=1; 
     a=0; 
     tabcount--;
-    printtok(yytext);
+    printtok(strdup(yytext));
     ncount=0; 
     a=1;
     return O_END;
@@ -95,7 +94,7 @@ null {
 
 \[ {
     ncount=1; tabcount++;
-    printtok(yytext);
+    printtok(strdup(yytext));
     ncount=0;
     return A_BEGIN;
 };
@@ -103,7 +102,7 @@ null {
 \] {
     ncount=1; a=0; 
     tabcount--;
-    printtok(yytext);
+    printtok(strdup(yytext));
     ncount=0; a=1;
     return A_END;
 };
@@ -116,7 +115,7 @@ null {
 };
 : {
     dont=0;
-    printtok(yytext);
+    printtok(strdup(yytext));
     dont=1;
     return COLON;
 };
@@ -137,57 +136,24 @@ void printtok(char* token){
     
     if(ncount==1 && a==0)
     {   
-        // printf("\n");
-        if(printArray[yylineno] == NULL){
-            printArray[yylineno] = "\n";
-        }
-        else{
-            printArray[yylineno] = strcat(printArray[yylineno],"\n");
-        }
+        printf("\n");
         for(i=0;i<tabcount;i++){
             if(dont==1){
-                // printf("\t");
-                if(printArray[yylineno] == NULL){
-                    printArray[yylineno] = "\t";
-                }
-                else{
-                    printArray[yylineno] = strcat(printArray[yylineno],"\t");
-                }
+                printf("\t");
             }
         }
     }
-    // printf("%s", token);
-    if(printArray[yylineno] == NULL)
-    {
-        printArray[yylineno] = token;
-    }
-    else{
-        printArray[yylineno] = strcat(printArray[yylineno],token);
-    }
+    printf("%s", token);
     if(ncount==1 && a==1)
     {   
-        // printf("\n ");
-                if(printArray[yylineno] == NULL){
-                    printArray[yylineno] = "\n";
-                }
-                else{
-                    printArray[yylineno] = strcat(printArray[yylineno],"\n");
-                }
+        printf("\n ");
         for(i=0;i<tabcount;i++){
             if(dont==1){
-                // printf("\t");
-                if(printArray[yylineno] == NULL){
-                    printArray[yylineno] = "\t";
-                }else{
-                    printArray[yylineno] = strcat(printArray[yylineno],"\t");
-                }
+                printf("\t");
             }
         }
     }
 }
 void printnum(int num){
-    // printf("%d", num);
-    char* stringNum; 
-    sprintf(stringNum,"%d",num);
-    // printArray[yylineno] = strcat(printArray[yylineno],stringNum);
+    printf("%d", num);
 }
