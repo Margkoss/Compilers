@@ -20,10 +20,13 @@
   int errorArrayEnd = 0;
   char *error[20] = {NULL};
   int errorLineno[20] = {0};
+  char *strUnique[50];
+  char *strings;
 
   /* Required fields counters */
   int userID[20];
   int endOfArray=1;
+  int endOfArray1=1;
   int textField = 0;
   int idStrField = 0;
   int createdAtField = 0;
@@ -74,27 +77,44 @@ PAIR: STRING COLON VALUE
 
     | USER_INIT COLON O_BEGIN REQUIRED_VALUES O_END
     |ID_STR COLON STRING{
-      int isDigitCounter = 0;
-      for(int i = 0; i < strlen($3); i++){
-        if($3[i] == *"\"")
-          continue;
-        if(isdigit($3[i]))
-          isDigitCounter++;
-      }
-      if(isDigitCounter == (strlen($3) - 2)){         /*adjusting for the double quotes the string is supposed to have*/
-        idStrField++;
-      }else if(isDigitCounter == 0){
-        error[errorArrayEnd] = "\n\x1B[31mid_str field expected alphanumerical integer,alphanumerical string given";
-        errorLineno[errorArrayEnd] = yylineno;
-        errorArrayEnd++;
-      }else{
+    int isDigitCounter = 0;
+    for(int i = 0; i < strlen($3); i++){
+      if($3[i] == *"\"")
+        continue;
+      if(isdigit($3[i]))
+        isDigitCounter++;
 
-        error[errorArrayEnd] = "\n\x1B[31mid_str field contains characters";
-        errorLineno[errorArrayEnd] = yylineno;
-        errorArrayEnd++;
-      }
     }
 
+    if(isDigitCounter == (strlen($3) - 2)){         /*adjusting for the double quotes the string is supposed to have*/   
+      
+      int uniqueExist=0;
+      strUnique[0] = malloc(strlen($3)+1);
+      strings = (char*)malloc(strlen($3)+1);
+      strcpy(strings , $3);
+      for(int i = 0; i < endOfArray1; i++){   
+              if( !strcmp(strUnique[i], strings) ){
+                uniqueExist=1;
+                error[errorArrayEnd] = "\n\x1B[31mDuplicate id_str fields\n";
+                errorLineno[errorArrayEnd] = yylineno;
+                errorArrayEnd++;
+              }
+        }
+        if(uniqueExist==0){
+          strUnique[endOfArray1]=$3;
+          endOfArray1++;
+        }
+      idStrField++;
+    }else if(isDigitCounter == 0){
+      error[errorArrayEnd] = "\n\x1B[31mid_str expected alphanumerical integer, string given\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }else{
+      error[errorArrayEnd] = "\n\x1B[31mid_str field contains characters\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }
+    }
     |CREATED_AT COLON STRING{
       checkCreatedAt($3);
       createdAtField++; 
