@@ -13,7 +13,7 @@
 
   /*User functions*/
   void checkCreatedAt(char* createdAt);
-  void checkRequirements(int textField, int idStrField, int createdAtField);
+  void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField);
   int checkUser(int idField, int nameField, int screenNameField, int locationField);
 
   /*Error handling*/
@@ -23,7 +23,7 @@
   char *strUnique[50];
   char *strings;
 
-  /* Required fields counters */
+  /* Required fields counters (1st part)*/
   int userID[20];
   int endOfArray=1;
   int endOfArray1=1;
@@ -34,6 +34,11 @@
   int nameField = 0;
   int screenNameField = 0;
   int locationField = 0;
+
+  /* Required fields counters (2nd part)*/
+  int retweetTextField = 0;
+  int retweetUserField = 0;
+  char* originalText;
 
   /* Emojis */
   const char thumbsUp[5] = {0xF0, 0x9F, 0x91, 0x8D, '\0'};
@@ -49,12 +54,12 @@
   char* str;
 }
 %start            JSON
-%token            true false null CREATED_AT
+%token            null CREATED_AT
 %left             O_BEGIN O_END A_BEGIN A_END
 %left             COMMA
 %left             COLON
-%token            <intval> NUMBER
-%token            <str> STRING TEXT_INIT USER_INIT ID_STR 
+%token            <intval> NUMBER true false
+%token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET
 %%
 JSON: O_BEGIN O_END
     | O_BEGIN MEMBERS O_END
@@ -67,6 +72,7 @@ MEMBERS: PAIR
 PAIR: STRING COLON VALUE 
     | TEXT_INIT COLON STRING{
       if(strlen($3) <= 140){
+        originalText = $3;
         textField++;
       }else{
         error[errorArrayEnd] = "\n\x1B[31mtext field is supposed to be less or equal to 140 characters";
@@ -75,7 +81,6 @@ PAIR: STRING COLON VALUE
       }
     }
 
-    | USER_INIT COLON O_BEGIN REQUIRED_VALUES O_END
     |ID_STR COLON STRING{
     int isDigitCounter = 0;
     for(int i = 0; i < strlen($3); i++){
@@ -115,17 +120,49 @@ PAIR: STRING COLON VALUE
       errorArrayEnd++;
     }
     }
+
     |CREATED_AT COLON STRING{
       checkCreatedAt($3);
       createdAtField++; 
     }
+
+    | USER_INIT COLON O_BEGIN USER_REQUIRED_VALUES O_END
+
+    |RETWEET COLON O_BEGIN RT_REQUIRED_VALUES O_END
     ;
 
-REQUIRED_VALUES: REQUIRED_VALUE
-               |REQUIRED_VALUE COMMA REQUIRED_VALUES
+USER_REQUIRED_VALUES: USER_REQUIRED_VALUE
+               |USER_REQUIRED_VALUE COMMA USER_REQUIRED_VALUES
                ;
 
-REQUIRED_VALUE: STRING COLON NUMBER{
+RT_REQUIRED_VALUES: RT_REQUIRED_VALUE
+               |RT_REQUIRED_VALUE COMMA RT_REQUIRED_VALUES
+               ;
+
+RT_REQUIRED_VALUE: TEXT_INIT COLON STRING{
+    if(!strcmp($3,originalText)){
+      retweetTextField++;
+    }else{
+      error[errorArrayEnd] = "\n\x1B[31mRetweet_status text is not the same as the original text\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }
+  }
+  | USER_INIT COLON TWEET_USER {
+    retweetUserField++;
+  }
+  ;
+
+TWEET_USER: O_BEGIN STRING COLON STRING O_END {
+    if(strcmp($2,"\"screen_name\"")){
+      error[errorArrayEnd] = "\n\x1B[31mRetweet_status user has no screen_name property\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }
+}
+;
+
+USER_REQUIRED_VALUE: STRING COLON NUMBER{
     if(!strcmp($1,"\"id\"") && $3 >= 0){
       userID[endOfArray] = $3;
       for(int i = 0; i < endOfArray; i++){
@@ -167,6 +204,8 @@ ELEMENTS: VALUE
 
 VALUE: STRING
      | NUMBER
+     | true
+     | false
      | ARRAY
      | JSON
      ;
@@ -197,7 +236,7 @@ int main ( int argc, char *argv[] ) {
     return 1;
   }
 
-  checkRequirements(textField, idStrField, createdAtField);
+  checkRequirements(textField, idStrField, createdAtField, retweetTextField, retweetUserField);
   return 0;
 }
 
@@ -289,7 +328,7 @@ void checkCreatedAt(char* createdAt){
 }
 
 // Helper function for checking what mandatory fields are completed
-void checkRequirements(int textField, int idStrField, int createdAtField){
+void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField){
   if(textField){
     printf("\n%stext field ok!          %s\n",KBLU,thumbsUp);
   }
@@ -321,6 +360,23 @@ void checkRequirements(int textField, int idStrField, int createdAtField){
   }
   else{
     printf("%suser field bad          \n",KRED);
+    exit(1);
+  }
+
+  /*2nd part requirements*/
+
+  if(retweetTextField){
+    printf("%sretweeted_status text field ok!          %s\n",KBLU,thumbsUp);
+  }
+  else{
+    printf("%sERROR:retweeted_status text field missing          \n",KRED);
+    exit(1);
+  }
+  if(retweetUserField){
+    printf("%sretweeted_status user field ok!          %s\n",KBLU,thumbsUp);
+  }
+  else{
+    printf("%sERROR:retweeted_status user field missing          \n",KRED);
     exit(1);
   }
 }
