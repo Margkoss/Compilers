@@ -15,6 +15,7 @@
   void checkCreatedAt(char* createdAt);
   void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField);
   int checkUser(int idField, int nameField, int screenNameField, int locationField);
+  void checkTweetText(char* text);
 
   /*Error handling*/
   int errorArrayEnd = 0;
@@ -38,7 +39,10 @@
   /* Required fields counters (2nd part)*/
   int retweetTextField = 0;
   int retweetUserField = 0;
+  int tweetTextField = 0;
+  int tweetUserField = 0;
   char* originalText;
+  char* originalName;
 
   /* Emojis */
   const char thumbsUp[5] = {0xF0, 0x9F, 0x91, 0x8D, '\0'};
@@ -59,7 +63,7 @@
 %left             COMMA
 %left             COLON
 %token            <intval> NUMBER true false
-%token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET
+%token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET TWEET
 %%
 JSON: O_BEGIN O_END
     | O_BEGIN MEMBERS O_END
@@ -129,6 +133,8 @@ PAIR: STRING COLON VALUE
     | USER_INIT COLON O_BEGIN USER_REQUIRED_VALUES O_END
 
     |RETWEET COLON O_BEGIN RT_REQUIRED_VALUES O_END
+
+    |TWEET COLON O_BEGIN T_REQUIRED_VALUES O_END
     ;
 
 USER_REQUIRED_VALUES: USER_REQUIRED_VALUE
@@ -139,28 +145,9 @@ RT_REQUIRED_VALUES: RT_REQUIRED_VALUE
                |RT_REQUIRED_VALUE COMMA RT_REQUIRED_VALUES
                ;
 
-RT_REQUIRED_VALUE: TEXT_INIT COLON STRING{
-    if(!strcmp($3,originalText)){
-      retweetTextField++;
-    }else{
-      error[errorArrayEnd] = "\n\x1B[31mRetweet_status text is not the same as the original text\n";
-      errorLineno[errorArrayEnd] = yylineno;
-      errorArrayEnd++;
-    }
-  }
-  | USER_INIT COLON TWEET_USER {
-    retweetUserField++;
-  }
-  ;
-
-TWEET_USER: O_BEGIN STRING COLON STRING O_END {
-    if(strcmp($2,"\"screen_name\"")){
-      error[errorArrayEnd] = "\n\x1B[31mRetweet_status user has no screen_name property\n";
-      errorLineno[errorArrayEnd] = yylineno;
-      errorArrayEnd++;
-    }
-}
-;
+T_REQUIRED_VALUES: T_REQUIRED_VALUE
+               |T_REQUIRED_VALUE COMMA T_REQUIRED_VALUES
+               ;
 
 USER_REQUIRED_VALUE: STRING COLON NUMBER{
     if(!strcmp($1,"\"id\"") && $3 >= 0){
@@ -186,6 +173,7 @@ USER_REQUIRED_VALUE: STRING COLON NUMBER{
       nameField++;
     }
     if(!strcmp($1,"\"screen_name\"")){
+      originalName = $3;
       screenNameField++;
     }
     if(!strcmp($1,"\"location\"")){
@@ -193,7 +181,37 @@ USER_REQUIRED_VALUE: STRING COLON NUMBER{
     }
   }
   ;
+  RT_REQUIRED_VALUE: TEXT_INIT COLON STRING{
+    if(!strcmp($3,originalText)){
+      retweetTextField++;
+    }else{
+      error[errorArrayEnd] = "\n\x1B[31mRetweet_status text is not the same as the original text\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }
+  }
+  | USER_INIT COLON TWEET_USER {
+    retweetUserField++;
+  }
+  ;
 
+  T_REQUIRED_VALUE: TEXT_INIT COLON STRING{
+    tweetTextField++;
+    checkTweetText($3);
+  }
+  | USER_INIT COLON TWEET_USER{
+    tweetUserField++;
+  }
+  ;
+
+  TWEET_USER: O_BEGIN STRING COLON STRING O_END {
+      if(strcmp($2,"\"screen_name\"")){
+        error[errorArrayEnd] = "\n\x1B[31mRetweet_status or tweet user has no screen_name property\n";
+        errorLineno[errorArrayEnd] = yylineno;
+        errorArrayEnd++;
+      }
+  }
+  ;
 ARRAY: A_BEGIN A_END
      | A_BEGIN ELEMENTS A_END
      ;
@@ -379,6 +397,20 @@ void checkRequirements(int textField, int idStrField, int createdAtField ,int re
     printf("%sERROR:retweeted_status user field missing          \n",KRED);
     exit(1);
   }
+  if(tweetTextField){
+    printf("%stweet text field ok!          %s\n",KBLU,thumbsUp);
+  }
+  else{
+    printf("%sERROR:tweet text field missing          \n",KRED);
+    exit(1);
+  }
+  if(tweetUserField){
+    printf("%stweet user field ok!          %s\n",KBLU,thumbsUp);
+  }
+  else{
+    printf("%sERROR:tweet user field missing          \n",KRED);
+    exit(1);
+  }
 }
 
 // Helper function for checking the user fields
@@ -403,6 +435,53 @@ int checkUser(int idField, int nameField, int screenNameField, int locationField
   }
 
   return userChecks;
+}
+
+void checkTweetText(char* text){
+  char* parsed;
+  char* components[10];
+
+  // Get the first token
+  parsed = strtok (text," \",.:");
+  components[0] = parsed;
+
+  //Get the rest of the tokens and put them in the array
+  for(int i = 1; i < 3; i++){
+    if(parsed == NULL)
+      break;
+    else{
+      parsed = strtok (NULL, " \",.:");
+      components[i] = parsed;
+    }
+  }
+
+  //Check for RT
+  if(strcmp(components[0],"RT")){
+    error[errorArrayEnd] = "\n\x1B[31mTweet text field needs to be of format 'RT @OriginalAuthor OriginalText' and no RT found\n";
+    errorLineno[errorArrayEnd] = yylineno;
+    errorArrayEnd++;
+  }
+
+  // Check for @OriginalAuthor
+  components[1]++;
+  originalName++;
+  originalName[strlen(originalName) - 1] = 0;
+  
+  if(strcmp(components[1],originalName)){
+    error[errorArrayEnd] = "\n\x1B[31mTweet text field needs to be of format 'RT @OriginalAuthor OriginalText' and not original author name\n";
+    errorLineno[errorArrayEnd] = yylineno;
+    errorArrayEnd++;
+  }
+
+  // Check for original text
+  originalText++;
+  originalText[strlen(originalText) - 1] = 0;
+
+  if(strcmp(components[2],originalText)){
+    error[errorArrayEnd] = "\n\x1B[31mTweet text field needs to be of format 'RT @OriginalAuthor OriginalText' and not original text\n";
+    errorLineno[errorArrayEnd] = yylineno;
+    errorArrayEnd++;
+  }
 }
 
 // Bison function for printing errors
