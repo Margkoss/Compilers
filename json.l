@@ -30,6 +30,12 @@ CHAR {UNESCAPEDCHAR}|{ESCAPEDCHAR}|{UNICODECHAR}
 CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
+{DBL_QUOTE}retweeted_status{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
+    return RETWEET;
+}
 {DBL_QUOTE}created_at{DBL_QUOTE} {
     dont=0;
     printtok(strdup(yytext));
@@ -67,9 +73,11 @@ DBL_QUOTE ["]
     return NUMBER;
 }
 true {
+    yylval.intval = 1;
     return true;
 };
 false {
+    yylval.intval = 0;
     return false;
 };
 null {
