@@ -44,8 +44,12 @@
   int truncatedField = 0;
   int d_t_rField = 0;
   int truncated = 0;
+  int componentToCheck = 0;
   char* originalText;
   char* originalName;
+  char* fullTextVal;
+  char* fullTextValDup;
+  char* tok;
 
   /* Emojis */
   const char thumbsUp[5] = {0xF0, 0x9F, 0x91, 0x8D, '\0'};
@@ -66,7 +70,8 @@
 %left             COMMA
 %left             COLON
 %token            <intval> NUMBER true false TRUNCATED
-%token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET TWEET D_T_R
+%token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET TWEET D_T_R 
+%token            <str> EXT_TWEET FULL_TEXT ENTITIES HASHTAGS INDICES
 %%
 JSON: O_BEGIN O_END
     | O_BEGIN MEMBERS O_END
@@ -77,6 +82,8 @@ MEMBERS: PAIR
        ;
 
 PAIR: STRING COLON VALUE 
+    | ENTITIES COLON VALUE
+    | HASHTAGS COLON VALUE
     | TEXT_INIT COLON STRING{
       if(strlen($3) <= 140){
         originalText = $3;
@@ -133,11 +140,13 @@ PAIR: STRING COLON VALUE
       createdAtField++; 
     }
 
-    | USER_INIT COLON O_BEGIN USER_REQUIRED_VALUES O_END
+    |USER_INIT COLON O_BEGIN USER_REQUIRED_VALUES O_END
 
     |RETWEET COLON O_BEGIN RT_REQUIRED_VALUES O_END
 
     |TWEET COLON O_BEGIN T_REQUIRED_VALUES O_END
+
+    |EXT_TWEET COLON O_BEGIN EXT_TWEET_REQUIRED_VALUES O_END
 
     |TRUNCATED COLON true {
       truncatedField++;
@@ -170,6 +179,10 @@ RT_REQUIRED_VALUES: RT_REQUIRED_VALUE
 T_REQUIRED_VALUES: T_REQUIRED_VALUE
                |T_REQUIRED_VALUE COMMA T_REQUIRED_VALUES
                ;
+
+EXT_TWEET_REQUIRED_VALUES: EXT_TWEET_REQUIRED_VALUE
+                        | EXT_TWEET_REQUIRED_VALUE COMMA EXT_TWEET_REQUIRED_VALUES
+                        ;
 
 USER_REQUIRED_VALUE: STRING COLON NUMBER{
     if(!strcmp($1,"\"id\"") && $3 >= 0){
@@ -226,6 +239,65 @@ USER_REQUIRED_VALUE: STRING COLON NUMBER{
   }
   ;
 
+  EXT_TWEET_REQUIRED_VALUE: FULL_TEXT COLON STRING {
+    fullTextVal = $3;
+    //strip double quotes 
+    fullTextVal++;
+    fullTextVal[strlen(fullTextVal) -1] = 0;
+    fullTextValDup = strdup(fullTextVal);
+  }
+  |D_T_R COLON A_BEGIN NUMBER COMMA NUMBER A_END {
+    
+    if( $4 != 0 || $6 != strlen(fullTextVal)-1 ){
+      error[errorArrayEnd] = "\n\x1B[31mextended_tweet display_text_range values do not match length of full_text\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }
+
+  }
+  |ENTITIES COLON O_BEGIN ENTITIES_MEMBERS O_END
+  ;
+  ENTITIES_MEMBERS: ENTITIES_MEMBER
+                  | ENTITIES_MEMBER COMMA ENTITIES_MEMBERS
+  ;
+  ENTITIES_MEMBER: STRING COLON VALUE
+                 | HASHTAGS COLON HASHTAG_ARRAY
+  ;
+  HASHTAG_ARRAY: A_BEGIN A_END
+               | A_BEGIN HASHTAG_ARRAY_ELEMENTS A_END
+  ;
+  HASHTAG_ARRAY_ELEMENTS: HASHTAG_ARRAY_ELEMENT
+                        | HASHTAG_ARRAY_ELEMENT COMMA HASHTAG_ARRAY_ELEMENTS
+  ;
+  HASHTAG_ARRAY_ELEMENT: O_BEGIN HASHTAG_ARRAY_REQUIRED_ELEMENTS O_END
+  ;
+  HASHTAG_ARRAY_REQUIRED_ELEMENTS: HASHTAG_ARRAY_REQUIRED_ELEMENT
+                                 | HASHTAG_ARRAY_REQUIRED_ELEMENT COMMA HASHTAG_ARRAY_REQUIRED_ELEMENTS
+  ;
+  HASHTAG_ARRAY_REQUIRED_ELEMENT: TEXT_INIT COLON STRING{
+    if(componentToCheck == 0){
+      tok = strtok(fullTextValDup,"#");
+    }
+    componentToCheck++;
+    tok = strtok(NULL,"#");
+
+    // strip double quotes from $3
+    $3++;
+    $3[strlen($3)-1] = 0;
+    if(strcmp(tok, $3)){
+      error[errorArrayEnd] = "\n\x1B[31mtext property of entities->hashtags does not match original text hashtag\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }
+  }
+  |INDICES COLON A_BEGIN NUMBER COMMA NUMBER A_END{
+    if(!(fullTextVal[$4] == '#')){
+      error[errorArrayEnd] = "\n\x1B[31mhashtag indices do not match full text\n";
+      errorLineno[errorArrayEnd] = yylineno;
+      errorArrayEnd++;
+    }
+  }
+  ;
   TWEET_USER: O_BEGIN STRING COLON STRING O_END {
       if(strcmp($2,"\"screen_name\"")){
         error[errorArrayEnd] = "\n\x1B[31mRetweet_status or tweet user has no screen_name property\n";
