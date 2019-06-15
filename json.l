@@ -30,6 +30,12 @@ CHAR {UNESCAPEDCHAR}|{ESCAPEDCHAR}|{UNICODECHAR}
 CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
+{DBL_QUOTE}display_text_range{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
+    return D_T_R;
+}
 {DBL_QUOTE}truncated{DBL_QUOTE} {
     dont=0;
     printtok(strdup(yytext));
