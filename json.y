@@ -41,6 +41,7 @@
   int retweetUserField = 0;
   int tweetTextField = 0;
   int tweetUserField = 0;
+  int trunacated = 0;
   char* originalText;
   char* originalName;
 
@@ -62,7 +63,7 @@
 %left             O_BEGIN O_END A_BEGIN A_END
 %left             COMMA
 %left             COLON
-%token            <intval> NUMBER true false
+%token            <intval> NUMBER true false TRUNCATED
 %token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET TWEET
 %%
 JSON: O_BEGIN O_END
@@ -135,6 +136,12 @@ PAIR: STRING COLON VALUE
     |RETWEET COLON O_BEGIN RT_REQUIRED_VALUES O_END
 
     |TWEET COLON O_BEGIN T_REQUIRED_VALUES O_END
+
+    |TRUNCATED COLON true {
+      trunacated = 1;
+    }
+
+    |TRUNCATED COLON false
     ;
 
 USER_REQUIRED_VALUES: USER_REQUIRED_VALUE
