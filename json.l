@@ -30,6 +30,36 @@ CHAR {UNESCAPEDCHAR}|{ESCAPEDCHAR}|{UNICODECHAR}
 CHARS {CHAR}+
 DBL_QUOTE ["]
 %%
+{DBL_QUOTE}indices{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
+    return INDICES;
+}
+{DBL_QUOTE}hashtags{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
+    return HASHTAGS;
+}
+{DBL_QUOTE}entities{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
+    return ENTITIES;
+}
+{DBL_QUOTE}full_text{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
+    return FULL_TEXT;
+}
+{DBL_QUOTE}extended_tweet{DBL_QUOTE} {
+    dont=0;
+    printtok(strdup(yytext));
+    dont=1;
+    return EXT_TWEET;
+}
 {DBL_QUOTE}display_text_range{DBL_QUOTE} {
     dont=0;
     printtok(strdup(yytext));
