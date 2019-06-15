@@ -13,7 +13,7 @@
 
   /*User functions*/
   void checkCreatedAt(char* createdAt);
-  void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField);
+  void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField, int truncatedField ,int d_t_rField);
   int checkUser(int idField, int nameField, int screenNameField, int locationField);
   void checkTweetText(char* text);
 
@@ -41,7 +41,9 @@
   int retweetUserField = 0;
   int tweetTextField = 0;
   int tweetUserField = 0;
-  int trunacated = 0;
+  int truncatedField = 0;
+  int d_t_rField = 0;
+  int truncated = 0;
   char* originalText;
   char* originalName;
 
@@ -64,7 +66,7 @@
 %left             COMMA
 %left             COLON
 %token            <intval> NUMBER true false TRUNCATED
-%token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET TWEET
+%token            <str> STRING TEXT_INIT USER_INIT ID_STR RETWEET TWEET D_T_R
 %%
 JSON: O_BEGIN O_END
     | O_BEGIN MEMBERS O_END
@@ -138,10 +140,23 @@ PAIR: STRING COLON VALUE
     |TWEET COLON O_BEGIN T_REQUIRED_VALUES O_END
 
     |TRUNCATED COLON true {
-      trunacated = 1;
+      truncatedField++;
+      truncated = 1;
     }
 
-    |TRUNCATED COLON false
+    |TRUNCATED COLON false {
+      truncatedField++;
+      truncated = 0;
+    }
+
+    |D_T_R COLON A_BEGIN NUMBER COMMA NUMBER A_END {
+      d_t_rField++;
+      if(($4 < 0 || $6 > 140)){
+        error[errorArrayEnd] = "\n\x1B[31mdisplay_text_range after truncated true array can't be <0 || >140\n";
+        errorLineno[errorArrayEnd] = yylineno;
+        errorArrayEnd++;
+      }
+    }
     ;
 
 USER_REQUIRED_VALUES: USER_REQUIRED_VALUE
@@ -261,7 +276,7 @@ int main ( int argc, char *argv[] ) {
     return 1;
   }
 
-  checkRequirements(textField, idStrField, createdAtField, retweetTextField, retweetUserField);
+  checkRequirements(textField, idStrField, createdAtField, retweetTextField, retweetUserField,truncatedField,d_t_rField);
   return 0;
 }
 
@@ -353,7 +368,7 @@ void checkCreatedAt(char* createdAt){
 }
 
 // Helper function for checking what mandatory fields are completed
-void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField){
+void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField, int truncatedField ,int d_t_rField){
   if(textField){
     printf("\n%stext field ok!          %s\n",KBLU,thumbsUp);
   }
@@ -418,6 +433,13 @@ void checkRequirements(int textField, int idStrField, int createdAtField ,int re
     printf("%sERROR:tweet user field missing          \n",KRED);
     exit(1);
   }
+  if(truncatedField && d_t_rField){
+    printf("%struncated field ok!          %s\n",KBLU,thumbsUp);
+  }
+  else if(truncated && !d_t_rField){
+    printf("%sERROR:truncated field is true yet there was no display_text_range array          \n",KRED);
+    exit(1);
+  }
 }
 
 // Helper function for checking the user fields
@@ -480,15 +502,7 @@ void checkTweetText(char* text){
     errorArrayEnd++;
   }
 
-  // Check for original text
-  originalText++;
-  originalText[strlen(originalText) - 1] = 0;
-
-  if(strcmp(components[2],originalText)){
-    error[errorArrayEnd] = "\n\x1B[31mTweet text field needs to be of format 'RT @OriginalAuthor OriginalText' and not original text\n";
-    errorLineno[errorArrayEnd] = yylineno;
-    errorArrayEnd++;
-  }
+  // Components 2 needs to be the rest of the text so we don't have to check
 }
 
 // Bison function for printing errors
