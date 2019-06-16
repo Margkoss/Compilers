@@ -13,7 +13,7 @@
 
   /*User functions*/
   void checkCreatedAt(char* createdAt);
-  void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField, int truncatedField ,int d_t_rField);
+  void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField, int truncatedField ,int d_t_rField, int extendedField);
   int checkUser(int idField, int nameField, int screenNameField, int locationField);
   void checkTweetText(char* text);
 
@@ -44,6 +44,7 @@
   int truncatedField = 0;
   int d_t_rField = 0;
   int truncated = 0;
+  int extendedField = 0;
   int componentToCheck = 0;
   char* originalText;
   char* originalName;
@@ -146,7 +147,9 @@ PAIR: STRING COLON VALUE
 
     |TWEET COLON O_BEGIN T_REQUIRED_VALUES O_END
 
-    |EXT_TWEET COLON O_BEGIN EXT_TWEET_REQUIRED_VALUES O_END
+    |EXT_TWEET COLON O_BEGIN EXT_TWEET_REQUIRED_VALUES O_END {
+      extendedField++;
+    }
 
     |TRUNCATED COLON true {
       truncatedField++;
@@ -348,7 +351,7 @@ int main ( int argc, char *argv[] ) {
     return 1;
   }
 
-  checkRequirements(textField, idStrField, createdAtField, retweetTextField, retweetUserField,truncatedField,d_t_rField);
+  checkRequirements(textField, idStrField, createdAtField, retweetTextField, retweetUserField, truncatedField, d_t_rField, extendedField);
   return 0;
 }
 
@@ -440,7 +443,7 @@ void checkCreatedAt(char* createdAt){
 }
 
 // Helper function for checking what mandatory fields are completed
-void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField, int truncatedField ,int d_t_rField){
+void checkRequirements(int textField, int idStrField, int createdAtField ,int retweetTextField, int retweetUserField, int truncatedField ,int d_t_rField, int extendedField){
   if(textField){
     printf("\n%stext field ok!          %s\n",KBLU,thumbsUp);
   }
@@ -510,6 +513,12 @@ void checkRequirements(int textField, int idStrField, int createdAtField ,int re
   }
   else if(truncated && !d_t_rField){
     printf("%sERROR:truncated field is true yet there was no display_text_range array          \n",KRED);
+    exit(1);
+  }
+  if(extendedField){
+    printf("%sextended_tweet field ok!          %s\n",KBLU,thumbsUp);
+  }else{
+    printf("%sERROR:extended_tweet field missing          \n",KRED);
     exit(1);
   }
 }
